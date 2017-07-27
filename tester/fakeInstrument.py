@@ -271,21 +271,22 @@ class TestManager(object):
                      "for garbage *\n", color=bcolors.FAIL)
 
     def _isAlreadyRunning(self):
-        procs = []
-        for proc in process_iter():
-            if proc.name() == 'python':
-                cmd = proc.cmdline()
-                if cmd != []:
-                    if cmd[1].lower().startswith(DevServer.lower()) and\
-                            cmd[2].lower() == DevInstance.lower():
-                        self.log("found process %d" % (proc.pid))
-                        procs.append(proc)
-        if len(procs) == 0:
-            return False
-        if len(procs) > 1:
+
+        server_name = DevServer.lower()
+        ds_instance = DevInstance.lower()
+
+        processes_running = [proc for proc in process_iter()
+                                  if proc.name() == 'python'
+                                  and len(proc.cmdline()) > 2
+                                  and proc.cmdline()[1].lower().startswith(server_name)
+                                  and proc.cmdline()[2].lower() == ds_instance
+                             ]
+
+        is_already_running = len(processes_running) > 1
+        if is_already_running:
             self.log("ALERT: the device seems to be running more than once",
                      color=bcolors.FAIL)
-        return True
+        return is_already_running
 
     def _isDeviceReady(self):
         if self._deviceProcess is None:
